@@ -1,8 +1,27 @@
-// import AppError from '../errors/AppError';
+import { getCustomRepository, ObjectID } from 'typeorm';
+
+import AppError from '../errors/AppError';
+import TransactionsRepository from '../repositories/TransactionsRepository';
+
+interface Request {
+  id: string;
+}
 
 class DeleteTransactionService {
-  public async execute(): Promise<void> {
-    // TODO
+  public async execute({ id }: Request): Promise<void> {
+    const transactionsRepository = getCustomRepository(TransactionsRepository);
+
+    const transactionExists = transactionsRepository.findOne({
+      where: { id },
+    });
+
+    if (!transactionExists)
+      throw new AppError(
+        "This transaction don't exists on databse or the ID is invalid",
+        400,
+      );
+
+    await transactionsRepository.delete(id);
   }
 }
 

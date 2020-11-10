@@ -1,7 +1,14 @@
-import AppError from '../errors/AppError';
+import {
+  getCustomRepository,
+  getRepository,
+  TransactionRepository,
+} from 'typeorm';
 
-import Transaction from '../models/Transaction';
 import TransactionsRepository from '../repositories/TransactionsRepository';
+
+import AppError from '../errors/AppError';
+import Category from '../models/Category';
+import Transaction from '../models/Transaction';
 
 interface Request {
   title: string;
@@ -22,10 +29,38 @@ class CreateTransactionService {
     type,
     category,
   }: Request): Promise<Transaction> {
-    const transactionRepository = new TransactionsRepository();
+    const transactionsRepository = getCustomRepository(TransactionsRepository);
+
     if (type === 'outcome') {
-      const balance = await transactionRepository.getBalance();
+      const { total } = await transactionsRepository.getBalance();
+
+      if (value < 0) throw new AppError('Value must be a positive number', 400);
+
+      if (total < value) throw new AppError('Insufficient balance', 400);
     }
+
+    const categoriesRepository = getRepository(Category);
+
+    const newCategory =
+      (await categoriesRepository.findOne({
+        title: category,
+      })) ||
+      categoriesRepository.create({
+        title: category,
+      });
+
+    await categoriesRepository.save(newCategory);
+
+    const transaction = transactionsRepository.create({
+      title,
+      value,
+      type,
+      category_id: newCategory.id,
+    });
+
+    await transactionsRepository.save(transaction);
+
+    return transaction;
   }
 }
 

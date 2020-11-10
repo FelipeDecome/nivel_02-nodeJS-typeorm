@@ -35,12 +35,6 @@ class TransactionsRepository extends Repository<Transaction> {
 
     return { income, outcome, total };
   }
-
-  public async index(): Promise<Transaction[]> {
-    const transactions = await this.find();
-
-    return transactions;
-  }
 }
 
 export default TransactionsRepository;
