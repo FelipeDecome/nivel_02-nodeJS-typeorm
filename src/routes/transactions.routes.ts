@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { getCustomRepository } from 'typeorm';
 
-import { promisify } from 'util';
 import fs from 'fs';
 import multer from 'multer';
 import uploadConfig from '../config/upload';
@@ -51,23 +50,19 @@ transactionsRouter.delete('/:id', async (request, response) => {
 
 transactionsRouter.post(
   '/import',
-  upload.single('csvFile'),
+  upload.single('file'),
   async (request, response) => {
-    try {
-      const { path } = request.file;
+    const { path } = request.file;
 
-      const importTransactionsService = new ImportTransactionsService();
+    const importTransactionsService = new ImportTransactionsService();
 
-      const transactions = await importTransactionsService.execute({
-        filepath: path,
-      });
+    const transactions = await importTransactionsService.execute({
+      filepath: path,
+    });
 
-      await fs.promises.unlink(path);
+    await fs.promises.unlink(path);
 
-      return response.json(transactions);
-    } catch (err) {
-      return response.status(400).json(err);
-    }
+    return response.json(transactions);
   },
 );
 

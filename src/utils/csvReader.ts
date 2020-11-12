@@ -5,7 +5,16 @@ interface CsvReaderProps {
   filepath: string;
 }
 
-async function csvReader({ filepath }: CsvReaderProps): Promise<string[]> {
+interface CSVTransaction {
+  title: string;
+  type: 'income' | 'outcome';
+  value: number;
+  category: string;
+}
+
+async function csvReader({
+  filepath,
+}: CsvReaderProps): Promise<CSVTransaction[]> {
   const readCSVStream = fs.createReadStream(filepath);
 
   const parseStream = csvParse({
@@ -17,11 +26,20 @@ async function csvReader({ filepath }: CsvReaderProps): Promise<string[]> {
   const parseCSV = readCSVStream.pipe(parseStream);
 
   return new Promise(resolve => {
-    const lines: string[] = [];
+    const transactionsProps: CSVTransaction[] = [];
 
-    parseCSV.on('data', line => lines.push(line));
+    parseCSV.on('data', line => {
+      const [title, type, value, category] = line;
 
-    parseCSV.on('end', () => resolve(lines));
+      transactionsProps.push({
+        title,
+        type,
+        value: Number(value),
+        category,
+      });
+    });
+
+    parseCSV.on('end', () => resolve(transactionsProps));
   });
 }
 
