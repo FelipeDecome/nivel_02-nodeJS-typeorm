@@ -1,29 +1,50 @@
-import path from 'path';
+import { getCustomRepository, getRepository } from 'typeorm';
 import csvReader from '../utils/csvReader';
 
+import AppError from '../errors/AppError';
+
 import Transaction from '../models/Transaction';
-import CreateTransactionService from './CreateTransactionService';
+import Category from '../models/Category';
+
+interface Request {
+  filepath: string;
+}
+
+/**
+ * Ler arquivo CSV;
+ * Verificar as categorias à serem criadas se existem no banco e adicionar em um array as que ainda não existem;
+ * Verificar se os valores da Transação estão OK;
+ * Criar as transações e armazenar em um array;
+ * Criar as Categorias salvar o id delas;
+ * Criar as Transações com os ids salvos;
+ * Inserir as Categorias no banco;
+ * Inserir as Transações no banco;
+ * Retornar o Array das transações inseridas;
+ */
 
 class ImportTransactionsService {
-  async execute(): Promise<Transaction[]> {
-    const csvFilePath = path.resolve(
-      __dirname,
-      '..',
-      '__tests__',
-      'import_template.csv',
-    );
+  async execute({ filepath }: Request): Promise<void> {
+    const csvData = await csvReader({ filepath });
 
-    const lines = await csvReader({ filepath: csvFilePath });
+    const categoryRepository = getRepository(Category);
 
-    const createTransactionService = new CreateTransactionService();
+    // const importedTransactions = [];
+    const categoriesToBeInsertOnDatabase = [];
 
-    const transactions = lines.map(line => {
-      return createTransactionService.execute({
-        title: line[0],
-        value: line[1],
-        type: line[2],
-        category: line[3],
+    csvData.map(async line => {
+      const [title, type, value, category] = line.split(',');
+
+      console.log(line);
+
+      if (!title || !type || !value)
+        throw new AppError('Wrong structure on the imported csv file');
+
+      const categoryExists = await categoryRepository.findOne({
+        title: category,
       });
+
+      if (!categoryExists) categoriesToBeInsertOnDatabase.push(category);
+      throw new AppError('Teste');
     });
   }
 }

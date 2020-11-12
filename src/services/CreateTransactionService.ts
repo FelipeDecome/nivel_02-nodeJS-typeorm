@@ -1,8 +1,4 @@
-import {
-  getCustomRepository,
-  getRepository,
-  TransactionRepository,
-} from 'typeorm';
+import { getCustomRepository, getRepository } from 'typeorm';
 
 import TransactionsRepository from '../repositories/TransactionsRepository';
 
@@ -15,6 +11,7 @@ interface Request {
   value: number;
   type: 'income' | 'outcome';
   category: string;
+  ignoreBalance?: boolean;
 }
 
 /**
@@ -28,6 +25,7 @@ class CreateTransactionService {
     value,
     type,
     category,
+    ignoreBalance,
   }: Request): Promise<Transaction> {
     const transactionsRepository = getCustomRepository(TransactionsRepository);
 
@@ -36,7 +34,8 @@ class CreateTransactionService {
 
       if (value < 0) throw new AppError('Value must be a positive number', 400);
 
-      if (total < value) throw new AppError('Insufficient balance', 400);
+      if (total < value && !ignoreBalance)
+        throw new AppError('Insufficient balance', 400);
     }
 
     const categoriesRepository = getRepository(Category);
